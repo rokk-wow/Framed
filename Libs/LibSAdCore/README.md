@@ -453,53 +453,24 @@ addon.locale.enEN = {
 
 ## Slash Commands
 
-By default, every addon automatically gets a slash command based on the addon name. For example, if your addon is named `MyAddon`, the slash command `/myaddon` is automatically registered.
-
-**Default behavior:** Typing the slash command alone (e.g., `/myaddon`) opens the addon's settings panel.
-
-### Registering Custom Commands
-
-You can register additional commands as **parameters** to the main slash command using `self:RegisterSlashCommand(command, callback)`. These custom commands are accessed by typing the main slash command followed by the command name.
+Register custom slash commands using `self:RegisterSlashCommand(command, callback)`. Each command becomes its own slash command that accepts parameters.
 
 **Example:**
 ```lua
 function addon:Initialize()
     self.author = "Your Name"
     
-    -- Configure your settings panels here
-    -- ...
-    
-    -- Register slash commands
     self:RegisterSlashCommand("hello", self.HelloCommand)
-    self:RegisterSlashCommand("debug", self.DebugCommand)
 end
 
-function addon:HelloCommand()
-    self:Info("Hello, World!")
-end
-
-function addon:DebugCommand(enabled)
-    if enabled == "on" then
-        self.savedVars.main.enableDebugging = true
-        self:Info("Debugging enabled")
-    end
+function addon:HelloCommand(message, name)
+    self:Info("Hello, " .. (name or "World") .. "!")
 end
 ```
 
 **Usage:**
-- `/myaddon` - Opens the settings panel (default behavior)
-- `/myaddon hello` - Calls the `HelloCommand` function, displays "Hello, World!"
-- `/myaddon debug on` - Calls the `DebugCommand` function with parameter "on"
-
-**Note:** Command names are case-insensitive. To handle all slash command input yourself, register a wildcard handler using `"*"`:
-
-```lua
-self:RegisterSlashCommand("*", self.ProcessAllCommands)
-
-function addon:ProcessAllCommands(...)
-    -- Receives all parameters from /myaddon [params]
-end
-```
+- `/hello` - Displays "Hello, World!"
+- `/hello john` - Displays "Hello, john!"
 
 ## Event Registration
 
@@ -665,7 +636,7 @@ These are the most commonly used functions available on the `self` object within
 ### Events & Commands
 - **`self:RegisterEvent(eventName, callback)`** - Register a WoW event with a callback function
 - **`self:RegisterFrameEvent(eventName, callback)`** - Register a frame event (EventRegistry callback) with a callback function
-- **`self:RegisterSlashCommand(command, callback)`** - Register a custom slash command as a parameter to the main addon command
+- **`self:RegisterSlashCommand(command, callback)`** - Register a custom slash command (e.g., command="hello" creates /hello)
 
 ### Zone Detection
 - **`self:GetCurrentZone()`** - Returns current zone: "arena", "battleground", "dungeon", "raid", or "world"

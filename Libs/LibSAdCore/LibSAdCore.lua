@@ -11,7 +11,7 @@ local LIBSTUB_MAJOR, LIBSTUB_MINOR = "LibStub", 2
 local LibStub = _G[LIBSTUB_MAJOR]
 
 -- SAdCore Version
-local SADCORE_MAJOR, SADCORE_MINOR = "SAdCore-1", 23
+local SADCORE_MAJOR, SADCORE_MINOR = "SAdCore-1", 24
 
 if not LibStub or LibStub.minor < LIBSTUB_MINOR then
     LibStub = LibStub or {
@@ -408,7 +408,6 @@ do -- Initialize
         self.LibSerialize = LibStub("LibSerialize")
         self.LibCompress = LibStub("LibCompress")
 
-        self:_CreateSlashCommand()
         self:_InitializeSettingsPanel()
 
         self:_InitializeCombatQueue()
@@ -495,6 +494,44 @@ end
 
 do -- Registration functions
 
+        function addon:AddSettingsPanel(panelKey, panelConfig)
+        panelKey, panelConfig = callHook(self, "BeforeAddSettingsPanel", panelKey, panelConfig)
+
+        if panelKey == "main" then
+            assert(panelConfig.controls, "Main panel must have a 'controls' table.")
+            
+            self.sadCore.panels = self.sadCore.panels or {}
+            self.sadCore.panels.main = self.sadCore.panels.main or {}
+            self.sadCore.panels.main.controls = panelConfig.controls
+            
+            local returnValue = true
+            callHook(self, "AfterAddSettingsPanel", returnValue)
+            return returnValue
+        end
+
+        assert(not self.sadCore.panels[panelKey], string.format("Panel '%s' already exists. Each panel key must be unique.", panelKey))
+
+        self.sadCore.panels = self.sadCore.panels or {}
+        self.sadCore.panelOrder = self.sadCore.panelOrder or {}
+        self.sadCore.panels[panelKey] = panelConfig
+        
+        local alreadyTracked = false
+        for _, key in ipairs(self.sadCore.panelOrder) do
+            if key == panelKey then
+                alreadyTracked = true
+                break
+            end
+        end
+        
+        if not alreadyTracked then
+            table.insert(self.sadCore.panelOrder, panelKey)
+        end
+
+        local returnValue = true
+        callHook(self, "AfterAddSettingsPanel", returnValue)
+        return returnValue
+    end
+
     function addon:RegisterEvent(eventName, callback)
         local addonInstance = self
         eventName, callback = callHook(self, "BeforeRegisterEvent", eventName, callback)
@@ -534,87 +571,28 @@ do -- Registration functions
     function addon:RegisterSlashCommand(command, callback)
         command, callback = callHook(self, "BeforeRegisterSlashCommand", command, callback)
 
-        self.slashCommands = self.slashCommands or {}
-        self.slashCommands[command:lower()] = callback
+        local commandName = command:upper()
+        local commandString = "/" .. command:lower()
+        self:_CreateSlashCommand(commandName, commandString, callback)
 
         local returnValue = true
         callHook(self, "AfterRegisterSlashCommand", returnValue)
         return returnValue
     end
 
-    function addon:AddSettingsPanel(panelKey, panelConfig)
-        panelKey, panelConfig = callHook(self, "BeforeAddSettingsPanel", panelKey, panelConfig)
-
-        if panelKey == "main" then
-            assert(panelConfig.controls, "Main panel must have a 'controls' table.")
-            
-            self.sadCore.panels = self.sadCore.panels or {}
-            self.sadCore.panels.main = self.sadCore.panels.main or {}
-            self.sadCore.panels.main.controls = panelConfig.controls
-            
-            local returnValue = true
-            callHook(self, "AfterAddSettingsPanel", returnValue)
-            return returnValue
-        end
-
-        assert(not self.sadCore.panels[panelKey], string.format("Panel '%s' already exists. Each panel key must be unique.", panelKey))
-
-        self.sadCore.panels = self.sadCore.panels or {}
-        self.sadCore.panelOrder = self.sadCore.panelOrder or {}
-        self.sadCore.panels[panelKey] = panelConfig
-        
-        local alreadyTracked = false
-        for _, key in ipairs(self.sadCore.panelOrder) do
-            if key == panelKey then
-                alreadyTracked = true
-                break
-            end
-        end
-        
-        if not alreadyTracked then
-            table.insert(self.sadCore.panelOrder, panelKey)
-        end
-
-        local returnValue = true
-        callHook(self, "AfterAddSettingsPanel", returnValue)
-        return returnValue
-    end
-
-    function addon:_CreateSlashCommand()
+    function addon:_CreateSlashCommand(commandName, commandString, callback)
         local addonInstance = self
-        callHook(self, "BeforeCreateSlashCommand")
+        callHook(self, "BeforeCreateSlashCommand", commandName, commandString, callback)
 
-        self.slashCommands = self.slashCommands or {}
-
-        local slashCommandName = self.addonName:upper()
-        _G["SLASH_" .. slashCommandName .. "1"] = "/" .. self.addonName:lower()
-        SlashCmdList[slashCommandName] = function(message)
-            local command, rest = message:match("^(%S*)%s*(.-)$")
-            local originalCommand = command or ""
-            command = command and command:lower() or ""
-
-            if command ~= "" and addonInstance.slashCommands[command] then
-                local params = {}
-                if rest and rest ~= "" then
-                    for param in rest:gmatch("%S+") do
-                        table.insert(params, param)
-                    end
+        _G["SLASH_" .. commandName .. "1"] = commandString
+        SlashCmdList[commandName] = function(message)
+            local params = {}
+            if message and message ~= "" then
+                for param in message:gmatch("%S+") do
+                    table.insert(params, param)
                 end
-                addonInstance.slashCommands[command](addonInstance, unpack(params))
-            elseif addonInstance.slashCommands["*"] then
-                local params = {}
-                if originalCommand ~= "" then
-                    table.insert(params, originalCommand)
-                end
-                if rest and rest ~= "" then
-                    for param in rest:gmatch("%S+") do
-                        table.insert(params, param)
-                    end
-                end
-                addonInstance.slashCommands["*"](addonInstance, unpack(params))
-            else
-                addonInstance:OpenSettings()
             end
+            callback(addonInstance, unpack(params))
         end
 
         local returnValue = true
@@ -1423,9 +1401,7 @@ do -- Controls
                 if value == nil then
                     value = defaultValue
                 end
-                print("[ColorPicker REFRESH] panelKey=" .. tostring(panelKey) .. ", name=" .. tostring(name) .. ", hex=" .. tostring(value))
                 local r, g, b, a = self:HexToRGB(value)
-                print("[ColorPicker REFRESH] RGBA: r=" .. tostring(r) .. ", g=" .. tostring(g) .. ", b=" .. tostring(b) .. ", a=" .. tostring(a))
                 colorPicker.ColorSwatch.Color:SetColorTexture(r, g, b, a)
             end
         end
