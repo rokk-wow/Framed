@@ -4,6 +4,18 @@ local addon = SAdCore:GetAddon(addonName)
 
 -- English
 addon.locale.enEN = {
+	globalTitle = "Global",
+	globalHeader = "Global Settings",
+	playerTitle = "Player",
+	targetTitle = "Target",
+	targetTargetTitle = "Target of Target",
+	focusTitle = "Focus",
+	focusTargetTitle = "Focus Target",
+	petTitle = "Pet",
+	partyTitle = "Party",
+	arenaTitle = "Arena",
+	enabled = "Enable Frame",
+	enabledTooltip = "Enable or disable this frame."
 }
 
 -- Spanish

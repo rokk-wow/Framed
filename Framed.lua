@@ -10,4 +10,15 @@ addon.sadCore.compartmentFuncName = "Framed_Compartment_Func"
 function addon:Initialize()
     self.author = "Rôkk-Wyrmrest Accord"
 
+    self:SetupGlobalSettingsPanel()
+    self:SetupPlayerSettingsPanel()
+    self:SetupTargetSettingsPanel()
+    self:SetupTargetTargetSettingsPanel()
+    self:SetupFocusSettingsPanel()
+    self:SetupFocusTargetSettingsPanel()
+    self:SetupPetSettingsPanel()
+    self:SetupPartySettingsPanel()
+    self:SetupArenaSettingsPanel()
+
+    self.config = self:GetConfig()
 end
