@@ -6,8 +6,16 @@
 ## SavedVariablesPerCharacter: Framed_Settings_Char
 ## AddonCompartmentFunc: Framed_Compartment_Func
 ## IconTexture: Interface\Icons\boss_odunrunes_green
+## X-oUF: SAdUnitFrames_oUF
 
 Libs\LibSAdCore\LibSAdCore.lua
+Libs\oUF\oUF.xml
+
+Config.lua
+
+Frames\Player.lua
+
+Modules\Castbar.lua
 
 Framed.lua
 Localization.lua
